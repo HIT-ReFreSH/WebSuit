@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AssemblyName>HitRefresh.WebSuit.Core</AssemblyName>
+        <RootNamespace>HitRefresh.WebSuit</RootNamespace>
+        <Company>HitRefresh</Company>
+    </PropertyGroup>
+    <ItemGroup>
+        <PackageReference Include="HitRefresh.MobileSuit" Version="4.4.3" />
+        <PackageReference Include="NSec.Cryptography" Version="24.4.0" />
+        <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.0" />
+        <PackageReference Include="NSec.Cryptography" Version="24.4.0" />
+    </ItemGroup>
+    <ItemGroup>
+      <Folder Include="Builders\" />
+    </ItemGroup>
+
+</Project>

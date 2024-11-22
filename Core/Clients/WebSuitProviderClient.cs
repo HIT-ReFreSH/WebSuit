@@ -1,0 +1,75 @@
+﻿// /*
+//  * Author: Ferdinand Su
+//  * Email: ${User.Email}
+//  * Date: 11 22, 2024
+//  *
+//  */
+
+using HitRefresh.MobileSuit;
+using HitRefresh.WebSuit.Messaging;
+using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+
+namespace HitRefresh.WebSuit.Clients;
+
+public class WebSuitProviderClient : WebSuitClient
+{
+    public WebSuitProviderClient(IConfiguration configuration, ILogger<WebSuitClient> logger) : base
+        (configuration, logger)
+    {
+        HubConnection.On<string, int, string>
+        (
+            "ReceiveInput",
+            (sessionId, interruptionId, input) => OnInputReceived?.Invoke(sessionId, interruptionId, input)
+        );
+        HubConnection.On<string, string[]>
+            ("ReceiveRequest", (sessionId, request) => OnRequestReceived?.Invoke(sessionId, request));
+    }
+
+    public event Action<string, int, string>? OnInputReceived;
+    public event Action<string, string[]>? OnRequestReceived;
+
+    public async Task SendInterruptionAsync
+        (string sessionId, int interruptionId, WebSuitInterruptionType interruptionMessage)
+    {
+        try
+        {
+            await HubConnection.InvokeAsync("SendInterruption", RoomName, interruptionId, interruptionMessage);
+            Logger.LogInformation("Interruption sent to room: {RoomName}", RoomName);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to send interruption to room: {RoomName}", RoomName);
+        }
+    }
+
+    public async Task SendPrintAsync(string sessionId, PrintUnit printUnit)
+    {
+        try
+        {
+            await HubConnection.InvokeAsync("SendPrint", RoomName, printUnit);
+            Logger.LogInformation("Print units sent to room: {RoomName}", RoomName);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to send print units to room: {RoomName}", RoomName);
+        }
+    }
+
+    public async Task SendResponseAsync(string sessionId, SuitContextSummary response)
+    {
+        try
+        {
+            await HubConnection.InvokeAsync("SendResponse", RoomName, response);
+            Logger.LogInformation("Response sent to room: {RoomName}", RoomName);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to send response to room: {RoomName}", RoomName);
+        }
+    }
+
+    /// <inheritdoc />
+    protected override string Type => "Provider";
+}
