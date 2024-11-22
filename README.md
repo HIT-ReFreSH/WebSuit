@@ -1,17 +1,10 @@
 ﻿# HitRefresh.WebSuit
 
-## Connection Workflow
+## Generate Key-Pairs
 
-For Workers:
+```bash
+# Use RSA2048
+openssl genpkey -algorithm RSA -out private_key.pem -pkeyopt rsa_keygen_bits:2048
 
-1. Request -> Peer Created
-2. Auth Message -> Peer Activated/Peer Dead
-3. WebSuit Output/Response/Read Message -> Forward
-4. Disconnection Message -> Forward & Close
-
-For Consumers:
-
-1. Request -> Peer Created
-2. Auth Message -> Peer Activated/Peer Dead -> Pair Worker
-3. WebSuit Input/Request/Abort Message -> Forward (Open Session)
-4. Disconnection Message -> Forward & Close
+openssl rsa -pubout -in private_key.pem -out public_key.pem
+```

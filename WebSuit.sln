@@ -7,6 +7,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebSuit", "Server/WebSuit.c
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core", "Core\Core.csproj", "{53DFB5C7-833A-4E6C-B5CA-EC68F84FCF91}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DemoProvider", "DemoProvider\DemoProvider.csproj", "{D0E302D2-B916-4DBF-A77D-144CC083B67D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Crypto", "Crypto\Crypto.csproj", "{471042E6-9A8E-47E5-82E1-883EC7EB4D11}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +25,14 @@ Global
 		{53DFB5C7-833A-4E6C-B5CA-EC68F84FCF91}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{53DFB5C7-833A-4E6C-B5CA-EC68F84FCF91}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{53DFB5C7-833A-4E6C-B5CA-EC68F84FCF91}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D0E302D2-B916-4DBF-A77D-144CC083B67D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D0E302D2-B916-4DBF-A77D-144CC083B67D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D0E302D2-B916-4DBF-A77D-144CC083B67D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D0E302D2-B916-4DBF-A77D-144CC083B67D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{471042E6-9A8E-47E5-82E1-883EC7EB4D11}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{471042E6-9A8E-47E5-82E1-883EC7EB4D11}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{471042E6-9A8E-47E5-82E1-883EC7EB4D11}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{471042E6-9A8E-47E5-82E1-883EC7EB4D11}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

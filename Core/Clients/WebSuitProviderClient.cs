@@ -23,19 +23,19 @@ public class WebSuitProviderClient : WebSuitClient
             "ReceiveInput",
             (sessionId, interruptionId, input) => OnInputReceived?.Invoke(sessionId, interruptionId, input)
         );
-        HubConnection.On<string, string[]>
-            ("ReceiveRequest", (sessionId, request) => OnRequestReceived?.Invoke(sessionId, request));
+        HubConnection.On<string, int ,string>
+            ("ReceiveRequest", (sessionId,requestId, request) => OnRequestReceived?.Invoke(sessionId,requestId, request));
     }
 
     public event Action<string, int, string>? OnInputReceived;
-    public event Action<string, string[]>? OnRequestReceived;
+    public event Action<string, int, string>? OnRequestReceived;
 
     public async Task SendInterruptionAsync
         (string sessionId, int interruptionId, WebSuitInterruptionType interruptionMessage)
     {
         try
         {
-            await HubConnection.InvokeAsync("SendInterruption", RoomName, interruptionId, interruptionMessage);
+            await HubConnection.InvokeAsync("SendInterruption", RoomName, sessionId,interruptionId, interruptionMessage);
             Logger.LogInformation("Interruption sent to room: {RoomName}", RoomName);
         }
         catch (Exception ex)
@@ -48,7 +48,7 @@ public class WebSuitProviderClient : WebSuitClient
     {
         try
         {
-            await HubConnection.InvokeAsync("SendPrint", RoomName, printUnit);
+            await HubConnection.InvokeAsync("SendPrint", RoomName, sessionId,printUnit);
             Logger.LogInformation("Print units sent to room: {RoomName}", RoomName);
         }
         catch (Exception ex)
@@ -57,11 +57,11 @@ public class WebSuitProviderClient : WebSuitClient
         }
     }
 
-    public async Task SendResponseAsync(string sessionId, SuitContextSummary response)
+    public async Task SendResponseAsync(string sessionId, int requestId, SuitContextSummary response)
     {
         try
         {
-            await HubConnection.InvokeAsync("SendResponse", RoomName, response);
+            await HubConnection.InvokeAsync("SendResponse", RoomName, sessionId,requestId, response);
             Logger.LogInformation("Response sent to room: {RoomName}", RoomName);
         }
         catch (Exception ex)

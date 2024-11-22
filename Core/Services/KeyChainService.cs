@@ -5,6 +5,7 @@
 //  *
 //  */
 
+using System.Buffers.Binary;
 using System.Security.Cryptography;
 using System.Text;
 using HitRefresh.MobileSuit.Core;
@@ -20,38 +21,25 @@ public class KeyChainService(IConfiguration configuration, ILogger<KeyChainServi
 
     private IEnumerable<string> GetAuthorizedKeys()
     {
-
-        foreach (string key in _authorizedKeys)
+        foreach (var fileName in _authorizedKeys)
         {
-            if (key.StartsWith("file::"))
+            if (!File.Exists(fileName))
             {
-                var fileName = key.Substring("file::".Length);
-                if (!File.Exists(fileName))
-                {
-                    logger.LogWarning("Missing AuthorizedKeys file: {filename}",fileName);
-                    continue;
-                }
+                logger.LogWarning("Missing AuthorizedKeys file: {filename}", fileName);
+                continue;
+            }
 
-                foreach (var fileKey in File.ReadAllLines(fileName))
-                {
-                    if (IsValidKeyFormat(fileKey))
-                    {
-                        yield return fileKey.Trim();
-                    }
-                    logger.LogWarning("Invalid Authorized Key: {key}",fileKey);
-                }
-            }
-            else
-            {
-                if (IsValidKeyFormat(key))
-                {
-                    yield return key.Trim();
-                }
-                logger.LogWarning("Invalid Authorized Key: {key}",key);
-            }
+
+            yield return File.ReadAllText(fileName);
         }
     }
 
+    /// <summary>
+    /// Verify message with public keys
+    /// </summary>
+    /// <param name="encryptedMessage">Origin message</param>
+    /// <param name="signature">Base64 encoded signed bytes</param>
+    /// <returns></returns>
     public bool VerifySignature(string encryptedMessage, string signature)
     {
         var authorizedKeys = GetAuthorizedKeys();
@@ -59,39 +47,17 @@ public class KeyChainService(IConfiguration configuration, ILogger<KeyChainServi
         return authorizedKeys.Any(publicKey => VerifyWithPublicKey(publicKey, encryptedMessage, signature));
     }
 
-    private bool IsValidKeyFormat(string key)
-    {
-        // 验证公钥格式支持扩展
-        return key.StartsWith("ssh-rsa ") ||
-               key.StartsWith("ecdsa-sha2-nistp") ||
-               key.StartsWith("ssh-ed25519 ") ||
-               key.StartsWith("-----BEGIN PUBLIC KEY-----");
-    }
 
     private bool VerifyWithPublicKey(string publicKey, string data, string signature)
     {
         try
         {
-            if (publicKey.StartsWith("ssh-rsa"))
-            {
-                return VerifyRsaPublicKey(publicKey, data, signature);
-            }
-            else if (publicKey.StartsWith("ecdsa-sha2-nistp"))
-            {
-                return VerifyEcdsaPublicKey(publicKey, data, signature);
-            }
-            else if (publicKey.StartsWith("ssh-ed25519"))
-            {
-                return VerifyEd25519PublicKey(publicKey, data, signature);
-            }
-            else if (publicKey.StartsWith("-----BEGIN PUBLIC KEY-----"))
-            {
-                return VerifyPemPublicKey(publicKey, data, signature);
-            }
-            else
-            {
-                return false;
-            }
+            using var rsaPublic = RSA.Create();
+            var dataBytes = Encoding.UTF8.GetBytes(data);
+            var signatureBytes = Convert.FromBase64String(signature);
+            rsaPublic.ImportFromPem(publicKey.ToCharArray());
+
+            return rsaPublic.VerifyData(dataBytes, signatureBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
         }
         catch
         {
@@ -99,61 +65,22 @@ public class KeyChainService(IConfiguration configuration, ILogger<KeyChainServi
         }
     }
 
-    private bool VerifyRsaPublicKey(string publicKey, string data, string signature)
+    /// <summary>
+    /// Encrypt the given data with given key file
+    /// </summary>
+    /// <param name="privateKeyFile">Path to private key file</param>
+    /// <param name="data"></param>
+    /// <returns></returns>
+    /// <exception cref="FileNotFoundException"></exception>
+    /// <exception cref="ArgumentException"></exception>
+    public static byte[] Encrypt(string privateKeyFile, string data)
     {
-        string base64Key = publicKey.Split(' ')[1];
-        using var rsa = new RSACryptoServiceProvider();
-        rsa.ImportSubjectPublicKeyInfo(Convert.FromBase64String(base64Key), out _);
-        return rsa.VerifyData(
-            Encoding.UTF8.GetBytes(data),
-            Convert.FromBase64String(signature),
-            HashAlgorithmName.SHA256,
-            RSASignaturePadding.Pkcs1);
-    }
+        string privateKey = File.ReadAllText(privateKeyFile);
+        using var rsaPrivate = RSA.Create();
+        rsaPrivate.ImportFromPem(privateKey.ToCharArray());
+        byte[] dataBytes = Encoding.UTF8.GetBytes(data);
 
-    private bool VerifyEcdsaPublicKey(string publicKey, string data, string signature)
-    {
-        string base64Key = publicKey.Split(' ')[1];
-        using var ecdsa = ECDsa.Create();
-        ecdsa.ImportSubjectPublicKeyInfo(Convert.FromBase64String(base64Key), out _);
-        return ecdsa.VerifyData(
-            Encoding.UTF8.GetBytes(data),
-            Convert.FromBase64String(signature),
-            HashAlgorithmName.SHA256);
-    }
-
-    private bool VerifyEd25519PublicKey(string publicKey, string data, string signature)
-    {
-        try
-        {
-            // 提取 Ed25519 公钥
-            string base64Key = publicKey.Split(' ')[1];
-            byte[] keyBytes = Convert.FromBase64String(base64Key);
-
-            // 创建 Ed25519 公钥对象
-            var algorithm = SignatureAlgorithm.Ed25519;
-            var publicKeyObj = PublicKey.Import(algorithm, keyBytes, KeyBlobFormat.RawPublicKey);
-
-            // 验证签名
-            byte[] messageBytes = Encoding.UTF8.GetBytes(data);
-            byte[] signatureBytes = Convert.FromBase64String(signature);
-
-            return algorithm.Verify(publicKeyObj, messageBytes, signatureBytes);
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    private bool VerifyPemPublicKey(string publicKey, string data, string signature)
-    {
-        using var rsa = RSA.Create();
-        rsa.ImportFromPem(publicKey);
-        return rsa.VerifyData(
-            Encoding.UTF8.GetBytes(data),
-            Convert.FromBase64String(signature),
-            HashAlgorithmName.SHA256,
-            RSASignaturePadding.Pkcs1);
+        // 使用私钥对数据进行签名
+        return rsaPrivate.SignData(dataBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
     }
 }

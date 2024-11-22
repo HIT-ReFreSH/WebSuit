@@ -45,7 +45,7 @@ public class WebSuitHub(KeyChainService keyChain) : Hub
         await base.OnDisconnectedAsync(exception);
     }
 
-    public async Task Authenticate(string role, string roomName, string utcTime, string signature)
+    public async Task Authenticate(string role, string roomName, DateTime utcTime, string signature)
     {
         if (!IsTimestampValid(utcTime))
         {
@@ -108,7 +108,7 @@ public class WebSuitHub(KeyChainService keyChain) : Hub
         await Clients.Client(providerId).SendAsync("ReceiveInput", Context.ConnectionId, interruptionId, input);
     }
 
-    public async Task SendRequest(string roomName, string[] request)
+    public async Task SendRequest(string roomName, int requestId, string request)
     {
         if (!Rooms.TryGetValue(roomName, out var room) || !room.Consumers.Contains(Context.ConnectionId))
         {
@@ -120,7 +120,7 @@ public class WebSuitHub(KeyChainService keyChain) : Hub
             throw new HubException("No Provider is assigned to you.");
         }
 
-        await Clients.Client(providerId).SendAsync("ReceiveRequest", Context.ConnectionId, request);
+        await Clients.Client(providerId).SendAsync("ReceiveRequest", Context.ConnectionId, requestId, request);
     }
 
     // Provider -> Consumer 消息转发
@@ -155,7 +155,7 @@ public class WebSuitHub(KeyChainService keyChain) : Hub
         await Clients.Client(consumerId).SendAsync("ReceivePrint", printUnits);
     }
 
-    public async Task SendResponse(string roomName, string consumerId, SuitContextSummary response)
+    public async Task SendResponse(string roomName, string consumerId, int requestId, SuitContextSummary response)
     {
         if (!Rooms.TryGetValue(roomName, out var room) || !room.Providers.Contains(Context.ConnectionId))
         {
@@ -167,15 +167,12 @@ public class WebSuitHub(KeyChainService keyChain) : Hub
             throw new HubException("The specified Consumer is not in this room.");
         }
 
-        await Clients.Client(consumerId).SendAsync("ReceiveResponse", response);
+        await Clients.Client(consumerId).SendAsync("ReceiveResponse", requestId,response);
     }
 
-    private static bool IsTimestampValid(string utcTimeString)
+    private static bool IsTimestampValid(DateTime utcTime)
     {
-        if (!DateTime.TryParse(utcTimeString, out var utcTime))
-        {
-            return false;
-        }
+
 
         var now = DateTime.UtcNow;
         return utcTime > now.AddMinutes(-5) && utcTime < now.AddMinutes(5);

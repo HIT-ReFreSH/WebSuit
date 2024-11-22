@@ -9,13 +9,14 @@ using HitRefresh.MobileSuit;
 using HitRefresh.MobileSuit.Core;
 using HitRefresh.MobileSuit.Core.Services;
 using HitRefresh.WebSuit.Clients;
+using HitRefresh.WebSuit.Core.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace HitRefresh.WebSuit;
+namespace HitRefresh.WebSuit.Hosts;
 
-public class WebSuitProviderHost: IMobileSuitHost
+public class WebSuitProviderHost : IMobileSuitHost
 {
     private readonly ISuitExceptionHandler _exceptionHandler;
     private readonly AsyncServiceScope _rootScope;
@@ -71,7 +72,7 @@ public class WebSuitProviderHost: IMobileSuitHost
         Initialize();
 
         _startUp.SetResult();
-        var client=Services.GetRequiredService<WebSuitProviderClient>();
+        var client = Services.GetRequiredService<WebSuitProviderClient>();
         client.OnRequestReceived += HandleRequest;
         await client.ConnectAsync();
         _hostTask = WaitForExit();
@@ -83,13 +84,16 @@ public class WebSuitProviderHost: IMobileSuitHost
         _hostTask = null;
     }
 
-    private async void HandleRequest(string sessionId, string[] request)
+    private async void HandleRequest(string sessionId, int requestId, string request)
     {
         if (_requestHandler is null) return;
         var requestScope = Services.CreateScope();
         var context = new SuitContext(requestScope);
-        context.Request = request;
-        context.Properties["WebSuit::SessionId"]= sessionId;
+        context.Request = [request];
+        var webSuitContext = context.ServiceProvider.GetRequiredService<WebSuitContextService>();
+        webSuitContext.SessionId = sessionId;
+        webSuitContext.RequestId = requestId;
+        webSuitContext.Role = "Provider";
         try
         {
             await _requestHandler(context);
@@ -105,15 +109,17 @@ public class WebSuitProviderHost: IMobileSuitHost
          || context.Status == RequestStatus.NoRequest && context.CancellationToken.IsCancellationRequested)
             _shutDown = true;
     }
+
     private async Task WaitForExit()
     {
         if (_requestHandler is null) return;
 
-        for (;!_shutDown;)
+        for (; !_shutDown;)
         {
             await Task.Delay(1000);
         }
-        var client=Services.GetRequiredService<WebSuitProviderClient>();
+
+        var client = Services.GetRequiredService<WebSuitProviderClient>();
         client.OnRequestReceived -= HandleRequest;
         await client.DisconnectAsync();
 

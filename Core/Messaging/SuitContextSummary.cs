@@ -36,4 +36,17 @@ public record SuitContextSummary
             context.Exception?.Message,
             context.Properties
         );
+
+    public void CopyTo(SuitContext context)
+    {
+        context.Request = Request;
+        context.Response = Response;
+        context.Status = Status;
+        context.Exception = ExceptionMessage is not null ? new Exception(ExceptionMessage) : null;
+        foreach (var (key, value) in Properties)
+        {
+            context.Properties[key] = value;
+        }
+
+    }
 }

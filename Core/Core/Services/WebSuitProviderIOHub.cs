@@ -26,13 +26,13 @@ public class WebSuitProviderIOHub : IIOHub
         PromptFormatter promptFormatter,
         IIOHubConfigurator configurator,
         WebSuitProviderClient client,
-        SuitContext context
+        WebSuitContextService context
     )
     {
         ColorSetting = IColorSetting.DefaultColorSetting;
         FormatPrompt = promptFormatter;
         Client = client;
-        SessionId = context.Properties["WebSuit::SessionId"];
+        SessionId = context.SessionId;
         Client.OnInputReceived += HandleInput;
         configurator(this);
     }

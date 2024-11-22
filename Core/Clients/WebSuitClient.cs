@@ -7,6 +7,7 @@
 
 using System.Security.Cryptography;
 using System.Text;
+using HitRefresh.WebSuit.Services;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -20,7 +21,8 @@ public abstract class WebSuitClient
     protected ILogger<WebSuitClient> Logger{ get; }
     private readonly string _privateKey;
     protected string RoomName { get; }
-    public WebSuitClient(IConfiguration configuration, ILogger<WebSuitClient> logger)
+
+    protected WebSuitClient(IConfiguration configuration, ILogger<WebSuitClient> logger)
     {
         Logger = logger;
         var host = configuration["WebSuit:Host"] ?? "";
@@ -32,64 +34,14 @@ public abstract class WebSuitClient
                         .Build();
 
     }
-    private static byte[] Encrypt(string pathOrKey, string data)
-    {
-        string privateKey;
-        if (pathOrKey.StartsWith("file::"))
-        {
-            var fileName = pathOrKey.Substring("file::".Length);
-            if (!File.Exists(fileName)) throw new FileNotFoundException("Private key file not found.", fileName);
 
-            privateKey = File.ReadAllText(fileName).Trim();
-        }
-        else
-        {
-            privateKey = pathOrKey;
-        }
-
-        var dataBytes = Encoding.UTF8.GetBytes(data);
-
-        if (privateKey.StartsWith("ssh-ed25519 "))
-        {
-            // 处理 Ed25519 私钥格式
-            var privateKeyBytes = Convert.FromBase64String(privateKey.Split(' ')[1]);
-            var key = Key.Import(SignatureAlgorithm.Ed25519, privateKeyBytes, KeyBlobFormat.RawPrivateKey);
-            return SignatureAlgorithm.Ed25519.Sign(key, dataBytes);
-        }
-
-        if (privateKey.StartsWith("ssh-rsa "))
-        {
-            // 处理 RSA 私钥格式
-            var privateKeyBytes = Convert.FromBase64String(privateKey.Split(' ')[1]);
-            using var rsa = RSA.Create();
-            rsa.ImportRSAPrivateKey(privateKeyBytes, out _);
-            return rsa.SignData(dataBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-        }
-
-        if (privateKey.StartsWith("-----BEGIN PRIVATE KEY-----"))
-        {
-            // 处理 PEM 格式的私钥
-            var privateKeyBytes = Convert.FromBase64String
-            (
-                privateKey.Replace
-                           ("-----BEGIN PRIVATE KEY-----", "")
-                          .Replace("-----END PRIVATE KEY-----", "")
-                          .Replace("\n", "")
-            );
-            using var rsa = RSA.Create();
-            rsa.ImportPkcs8PrivateKey(privateKeyBytes, out _);
-            return rsa.SignData(dataBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-        }
-
-        throw new ArgumentException("Unsupported private key format.");
-    }
 
     protected abstract string Type { get;}
     public async Task ConnectAsync()
     {
-        var utcTime = DateTime.UtcNow.ToString("o"); // 使用 ISO 8601 格式
+        var utcTime = DateTime.UtcNow;//.ToString("o"); // 使用 ISO 8601 格式
         var dataToSign = $"{Type}@{RoomName}@{utcTime}";
-        var signatureBytes = Encrypt(_privateKey, dataToSign);
+        var signatureBytes = KeyChainService.Encrypt( _privateKey, dataToSign);
         var signature = Convert.ToBase64String(signatureBytes);
 
         try

@@ -18,12 +18,12 @@ public class WebSuitConsumerClient : WebSuitClient
     {
         HubConnection.On<int, WebSuitInterruptionType>("ReceiveInterruption", (id,type) => OnInterruptionReceived?.Invoke(id,type));
         HubConnection.On<PrintUnit>("ReceivePrint", printUnits => OnPrintReceived?.Invoke(printUnits));
-        HubConnection.On<SuitContextSummary>("ReceiveResponse", response => OnResponseReceived?.Invoke(response));
+        HubConnection.On<int, SuitContextSummary>("ReceiveResponse", (id,response) => OnResponseReceived?.Invoke(id,response));
     }
 
     public event Action<int,WebSuitInterruptionType>? OnInterruptionReceived;
     public event Action<PrintUnit>? OnPrintReceived;
-    public event Action<SuitContextSummary>? OnResponseReceived;
+    public event Action<int,SuitContextSummary>? OnResponseReceived;
 
     public async Task SendInputAsync(int interruptionId, string input)
     {
@@ -38,11 +38,11 @@ public class WebSuitConsumerClient : WebSuitClient
         }
     }
 
-    public async Task SendRequestAsync(string[] request)
+    public async Task SendRequestAsync(int requestId,string request)
     {
         try
         {
-            await HubConnection.InvokeAsync("SendRequest", RoomName, request);
+            await HubConnection.InvokeAsync("SendRequest", RoomName, requestId,request);
             Logger.LogInformation("Request sent to room: {RoomName}", RoomName);
         }
         catch (Exception ex)
