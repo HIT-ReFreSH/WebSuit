@@ -23,9 +23,15 @@ public class WebSuitProviderClient : WebSuitClient
             "ReceiveInput",
             (sessionId, interruptionId, input) => OnInputReceived?.Invoke(sessionId, interruptionId, input)
         );
-        HubConnection.On<string, int ,string>
-            ("ReceiveRequest", (sessionId,requestId, request) => OnRequestReceived?.Invoke(sessionId,requestId, request));
+        HubConnection.On<string, int, string>
+        (
+            "ReceiveRequest",
+            (sessionId, requestId, request) => OnRequestReceived?.Invoke(sessionId, requestId, request)
+        );
     }
+
+    /// <inheritdoc />
+    protected override string Type => "Provider";
 
     public event Action<string, int, string>? OnInputReceived;
     public event Action<string, int, string>? OnRequestReceived;
@@ -35,7 +41,8 @@ public class WebSuitProviderClient : WebSuitClient
     {
         try
         {
-            await HubConnection.InvokeAsync("SendInterruption", RoomName, sessionId,interruptionId, interruptionMessage);
+            await HubConnection.InvokeAsync
+                ("SendInterruption", RoomName, sessionId, interruptionId, interruptionMessage);
             Logger.LogInformation("Interruption sent to room: {RoomName}", RoomName);
         }
         catch (Exception ex)
@@ -48,7 +55,7 @@ public class WebSuitProviderClient : WebSuitClient
     {
         try
         {
-            await HubConnection.InvokeAsync("SendPrint", RoomName, sessionId,printUnit);
+            await HubConnection.InvokeAsync("SendPrint", RoomName, sessionId, printUnit);
             Logger.LogInformation("Print units sent to room: {RoomName}", RoomName);
         }
         catch (Exception ex)
@@ -61,7 +68,7 @@ public class WebSuitProviderClient : WebSuitClient
     {
         try
         {
-            await HubConnection.InvokeAsync("SendResponse", RoomName, sessionId,requestId, response);
+            await HubConnection.InvokeAsync("SendResponse", RoomName, sessionId, requestId, response);
             Logger.LogInformation("Response sent to room: {RoomName}", RoomName);
         }
         catch (Exception ex)
@@ -69,7 +76,4 @@ public class WebSuitProviderClient : WebSuitClient
             Logger.LogError(ex, "Failed to send response to room: {RoomName}", RoomName);
         }
     }
-
-    /// <inheritdoc />
-    protected override string Type => "Provider";
 }

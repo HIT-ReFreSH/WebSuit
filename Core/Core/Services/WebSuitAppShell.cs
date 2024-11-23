@@ -5,9 +5,7 @@
 //  *
 //  */
 
-using HitRefresh.MobileSuit;
 using HitRefresh.MobileSuit.Core;
-using HitRefresh.MobileSuit.Core.Services;
 
 namespace HitRefresh.WebSuit.Core.Services;
 
@@ -54,7 +52,7 @@ public class WebSuitAppShell : SuitShell, ISuitShellCollection
     }
 
     /// <inheritdoc />
-    public override Task Execute(SuitContext context) => Task.CompletedTask;
+    public override Task Execute(SuitContext context) { return Task.CompletedTask; }
 
     /// <inheritdoc />
     public override bool MayExecute(IReadOnlyList<string> request)

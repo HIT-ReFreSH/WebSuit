@@ -5,14 +5,9 @@
 //  *
 //  */
 
-using HitRefresh.MobileSuit;
 using HitRefresh.MobileSuit.Core;
-using HitRefresh.MobileSuit.Core.Services;
-using HitRefresh.WebSuit.Clients;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace HitRefresh.WebSuit.Core.Middleware;
-
 
 /// <summary>
 ///     Middleware to execute command over web suit server shell.

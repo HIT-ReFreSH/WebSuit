@@ -7,7 +7,6 @@
 
 using HitRefresh.MobileSuit;
 using HitRefresh.MobileSuit.Core;
-using HitRefresh.MobileSuit.Core.Services;
 using HitRefresh.WebSuit.Clients;
 using HitRefresh.WebSuit.Core.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,7 +18,7 @@ namespace HitRefresh.WebSuit.Core.Middleware;
 /// </summary>
 public class WebSuitShellMiddleware : ISuitMiddleware
 {
-    private int requestId = 0;
+    private int requestId;
 
     /// <inheritdoc />
     public async Task InvokeAsync(SuitContext context, SuitRequestDelegate next)
@@ -30,7 +29,7 @@ public class WebSuitShellMiddleware : ISuitMiddleware
             await next(context);
         }
 
-        var rawCmd = context.Properties.GetValueOrDefault("WebSuit::OriginCmd", "");
+        var rawCmd = context.Properties.TryGetValue("WebSuit::OriginCmd", out var val) ? val : "";
         if (context.Status != RequestStatus.NotHandled
          || string.IsNullOrEmpty(rawCmd))
         {

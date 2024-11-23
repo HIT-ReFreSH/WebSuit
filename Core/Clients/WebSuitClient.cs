@@ -5,22 +5,16 @@
 //  *
 //  */
 
-using System.Security.Cryptography;
-using System.Text;
 using HitRefresh.WebSuit.Services;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using NSec.Cryptography;
 
 namespace HitRefresh.WebSuit.Clients;
 
 public abstract class WebSuitClient
 {
-    protected HubConnection HubConnection{ get; }
-    protected ILogger<WebSuitClient> Logger{ get; }
     private readonly string _privateKey;
-    protected string RoomName { get; }
 
     protected WebSuitClient(IConfiguration configuration, ILogger<WebSuitClient> logger)
     {
@@ -30,18 +24,22 @@ public abstract class WebSuitClient
         _privateKey = configuration["WebSuit:PrivateKey"] ?? "";
         // 配置 SignalR Hub 连接
         HubConnection = new HubConnectionBuilder()
-                        .WithUrl($"{host}/connect")
-                        .Build();
-
+                       .WithUrl($"{host}/connect")
+                       .Build();
     }
 
+    protected HubConnection HubConnection { get; }
+    protected ILogger<WebSuitClient> Logger { get; }
+    protected string RoomName { get; }
 
-    protected abstract string Type { get;}
+
+    protected abstract string Type { get; }
+
     public async Task ConnectAsync()
     {
-        var utcTime = DateTime.UtcNow;//.ToString("o"); // 使用 ISO 8601 格式
+        var utcTime = DateTime.UtcNow; //.ToString("o"); // 使用 ISO 8601 格式
         var dataToSign = $"{Type}@{RoomName}@{utcTime}";
-        var signatureBytes = KeyChainService.Encrypt( _privateKey, dataToSign);
+        var signatureBytes = KeyChainService.Encrypt(_privateKey, dataToSign);
         var signature = Convert.ToBase64String(signatureBytes);
 
         try

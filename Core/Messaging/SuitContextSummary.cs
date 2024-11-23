@@ -11,7 +11,7 @@ using HitRefresh.MobileSuit.Core;
 namespace HitRefresh.WebSuit.Messaging;
 
 /// <summary>
-/// Summarized from real SuitContext for easier transfer
+///     Summarized from real SuitContext for easier transfer
 /// </summary>
 /// <param name="Request"></param>
 /// <param name="Response"></param>
@@ -28,7 +28,8 @@ public record SuitContextSummary
 )
 {
     public static SuitContextSummary FromSuitContext(SuitContext context)
-        => new
+    {
+        return new
         (
             context.Request,
             context.Response,
@@ -36,6 +37,7 @@ public record SuitContextSummary
             context.Exception?.Message,
             context.Properties
         );
+    }
 
     public void CopyTo(SuitContext context)
     {
@@ -43,10 +45,6 @@ public record SuitContextSummary
         context.Response = Response;
         context.Status = Status;
         context.Exception = ExceptionMessage is not null ? new Exception(ExceptionMessage) : null;
-        foreach (var (key, value) in Properties)
-        {
-            context.Properties[key] = value;
-        }
-
+        foreach (var (key, value) in Properties) context.Properties[key] = value;
     }
 }

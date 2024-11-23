@@ -12,18 +12,25 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace HitRefresh.WebSuit.Clients;
+
 public class WebSuitConsumerClient : WebSuitClient
 {
-    public WebSuitConsumerClient(IConfiguration configuration, ILogger<WebSuitClient> logger) : base(configuration, logger)
+    public WebSuitConsumerClient(IConfiguration configuration, ILogger<WebSuitClient> logger) : base
+        (configuration, logger)
     {
-        HubConnection.On<int, WebSuitInterruptionType>("ReceiveInterruption", (id,type) => OnInterruptionReceived?.Invoke(id,type));
+        HubConnection.On<int, WebSuitInterruptionType>
+            ("ReceiveInterruption", (id, type) => OnInterruptionReceived?.Invoke(id, type));
         HubConnection.On<PrintUnit>("ReceivePrint", printUnits => OnPrintReceived?.Invoke(printUnits));
-        HubConnection.On<int, SuitContextSummary>("ReceiveResponse", (id,response) => OnResponseReceived?.Invoke(id,response));
+        HubConnection.On<int, SuitContextSummary>
+            ("ReceiveResponse", (id, response) => OnResponseReceived?.Invoke(id, response));
     }
 
-    public event Action<int,WebSuitInterruptionType>? OnInterruptionReceived;
+    /// <inheritdoc />
+    protected override string Type => "Consumer";
+
+    public event Action<int, WebSuitInterruptionType>? OnInterruptionReceived;
     public event Action<PrintUnit>? OnPrintReceived;
-    public event Action<int,SuitContextSummary>? OnResponseReceived;
+    public event Action<int, SuitContextSummary>? OnResponseReceived;
 
     public async Task SendInputAsync(int interruptionId, string input)
     {
@@ -38,11 +45,11 @@ public class WebSuitConsumerClient : WebSuitClient
         }
     }
 
-    public async Task SendRequestAsync(int requestId,string request)
+    public async Task SendRequestAsync(int requestId, string request)
     {
         try
         {
-            await HubConnection.InvokeAsync("SendRequest", RoomName, requestId,request);
+            await HubConnection.InvokeAsync("SendRequest", RoomName, requestId, request);
             Logger.LogInformation("Request sent to room: {RoomName}", RoomName);
         }
         catch (Exception ex)
@@ -50,7 +57,4 @@ public class WebSuitConsumerClient : WebSuitClient
             Logger.LogError(ex, "Failed to send request to room: {RoomName}", RoomName);
         }
     }
-
-    /// <inheritdoc />
-    protected override string Type => "Consumer";
 }

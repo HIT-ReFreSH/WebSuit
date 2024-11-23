@@ -18,6 +18,8 @@ namespace HitRefresh.WebSuit.Core.Services;
 
 public class WebSuitProviderIOHub : IIOHub
 {
+    protected int InterruptionIdPointer;
+
     /// <summary>
     ///     Initialize a IOServer.
     /// </summary>
@@ -37,41 +39,17 @@ public class WebSuitProviderIOHub : IIOHub
         configurator(this);
     }
 
-    ~WebSuitProviderIOHub() { Client.OnInputReceived -= HandleInput; }
-
-    private void HandleInput(string sessionId, int interruptionId, string input)
-    {
-        if (SessionId == sessionId)
-        {
-            InputQueue[interruptionId] = input;
-        }
-    }
-    private ConcurrentDictionary<int,string> InputQueue { get; } = new();
+    private ConcurrentDictionary<int, string> InputQueue { get; } = new();
     protected string SessionId { get; }
-    protected int InterruptionIdPointer;
     private List<PrintUnit> Prefix { get; } = [];
 
-    protected int SendInterruption(WebSuitInterruptionType type)
-    {
-        var id = InterruptionIdPointer;
-        Interlocked.Increment(ref InterruptionIdPointer);
-        _= Client.SendInterruptionAsync(SessionId, id, type);
-        return id;
-    }
-    protected async Task<int> SendInterruptionAsync(WebSuitInterruptionType type)
-    {
-        var id = InterruptionIdPointer;
-        Interlocked.Increment(ref InterruptionIdPointer);
-        await Client.SendInterruptionAsync(SessionId, id, type);
-        return id;
-    }
+    protected WebSuitProviderClient Client { get; }
+
     /// <inheritdoc />
     public IColorSetting ColorSetting { get; set; }
 
     /// <inheritdoc />
     public PromptFormatter FormatPrompt { get; }
-
-    protected WebSuitProviderClient Client { get; }
 
     /// <inheritdoc />
     public TextReader Input
@@ -83,37 +61,12 @@ public class WebSuitProviderIOHub : IIOHub
     /// <inheritdoc />
     public bool IsInputRedirected => throw new InvalidOperationException();
 
-    private string WaitInputUntilGot(int id)
-    {
-        string? result;
-        while (!InputQueue.TryGetValue(id, out result))
-        {
-            Thread.Sleep(100);
-        }
-
-        return result;
-    }
-
-    private async Task<string> WaitInputUntilGotAsync(int id)
-    {
-        string? result;
-        while (!InputQueue.TryGetValue(id, out result))
-        {
-            await Task.Delay(100);
-        }
-
-        return result;
-    }
-
 
     /// <inheritdoc />
     public void ResetInput() { throw new InvalidOperationException(); }
 
     /// <inheritdoc />
-    public string? ReadLine()
-    {
-        return WaitInputUntilGot(SendInterruption(WebSuitInterruptionType.Readline));
-    }
+    public string? ReadLine() { return WaitInputUntilGot(SendInterruption(WebSuitInterruptionType.Readline)); }
 
     /// <inheritdoc />
     public async Task<string?> ReadLineAsync()
@@ -122,22 +75,13 @@ public class WebSuitProviderIOHub : IIOHub
     }
 
     /// <inheritdoc />
-    public int Peek()
-    {
-        return int.Parse( WaitInputUntilGot(SendInterruption(WebSuitInterruptionType.PeekChar)));
-    }
+    public int Peek() { return int.Parse(WaitInputUntilGot(SendInterruption(WebSuitInterruptionType.PeekChar))); }
 
     /// <inheritdoc />
-    public int Read()
-    {
-        return int.Parse( WaitInputUntilGot(SendInterruption(WebSuitInterruptionType.ReadChar)));
-    }
+    public int Read() { return int.Parse(WaitInputUntilGot(SendInterruption(WebSuitInterruptionType.ReadChar))); }
 
     /// <inheritdoc />
-    public string ReadToEnd()
-    {
-        return WaitInputUntilGot(SendInterruption(WebSuitInterruptionType.ReadToEnd));
-    }
+    public string ReadToEnd() { return WaitInputUntilGot(SendInterruption(WebSuitInterruptionType.ReadToEnd)); }
 
     /// <inheritdoc />
     public async Task<string> ReadToEndAsync()
@@ -186,10 +130,10 @@ public class WebSuitProviderIOHub : IIOHub
     public void ClearWriteLinePrefix() { Prefix.Clear(); }
 
     /// <inheritdoc />
-    public virtual void Write(PrintUnit content) { Client.SendPrintAsync(SessionId,content).GetAwaiter().GetResult(); }
+    public virtual void Write(PrintUnit content) { Client.SendPrintAsync(SessionId, content).GetAwaiter().GetResult(); }
 
     /// <inheritdoc />
-    public virtual async Task WriteAsync(PrintUnit content) { await Client.SendPrintAsync(SessionId,content); }
+    public virtual async Task WriteAsync(PrintUnit content) { await Client.SendPrintAsync(SessionId, content); }
 
 
     /// <inheritdoc />
@@ -201,6 +145,45 @@ public class WebSuitProviderIOHub : IIOHub
         AppendTimeStamp(sb);
         sb.Append(IIOHub.GetLabel(type));
         return [(sb.ToString(), null)];
+    }
+
+    ~WebSuitProviderIOHub() { Client.OnInputReceived -= HandleInput; }
+
+    private void HandleInput(string sessionId, int interruptionId, string input)
+    {
+        if (SessionId == sessionId) InputQueue[interruptionId] = input;
+    }
+
+    protected int SendInterruption(WebSuitInterruptionType type)
+    {
+        var id = InterruptionIdPointer;
+        Interlocked.Increment(ref InterruptionIdPointer);
+        _ = Client.SendInterruptionAsync(SessionId, id, type);
+        return id;
+    }
+
+    protected async Task<int> SendInterruptionAsync(WebSuitInterruptionType type)
+    {
+        var id = InterruptionIdPointer;
+        Interlocked.Increment(ref InterruptionIdPointer);
+        await Client.SendInterruptionAsync(SessionId, id, type);
+        return id;
+    }
+
+    private string WaitInputUntilGot(int id)
+    {
+        string? result;
+        while (!InputQueue.TryGetValue(id, out result)) Thread.Sleep(100);
+
+        return result;
+    }
+
+    private async Task<string> WaitInputUntilGotAsync(int id)
+    {
+        string? result;
+        while (!InputQueue.TryGetValue(id, out result)) await Task.Delay(100);
+
+        return result;
     }
 
     private static void AppendTimeStamp(StringBuilder sb)

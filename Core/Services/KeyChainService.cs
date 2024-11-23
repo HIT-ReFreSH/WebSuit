@@ -5,13 +5,10 @@
 //  *
 //  */
 
-using System.Buffers.Binary;
 using System.Security.Cryptography;
 using System.Text;
-using HitRefresh.MobileSuit.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using NSec.Cryptography;
 
 namespace HitRefresh.WebSuit.Services;
 
@@ -35,7 +32,7 @@ public class KeyChainService(IConfiguration configuration, ILogger<KeyChainServi
     }
 
     /// <summary>
-    /// Verify message with public keys
+    ///     Verify message with public keys
     /// </summary>
     /// <param name="encryptedMessage">Origin message</param>
     /// <param name="signature">Base64 encoded signed bytes</param>
@@ -66,7 +63,7 @@ public class KeyChainService(IConfiguration configuration, ILogger<KeyChainServi
     }
 
     /// <summary>
-    /// Encrypt the given data with given key file
+    ///     Encrypt the given data with given key file
     /// </summary>
     /// <param name="privateKeyFile">Path to private key file</param>
     /// <param name="data"></param>
@@ -75,10 +72,10 @@ public class KeyChainService(IConfiguration configuration, ILogger<KeyChainServi
     /// <exception cref="ArgumentException"></exception>
     public static byte[] Encrypt(string privateKeyFile, string data)
     {
-        string privateKey = File.ReadAllText(privateKeyFile);
+        var privateKey = File.ReadAllText(privateKeyFile);
         using var rsaPrivate = RSA.Create();
         rsaPrivate.ImportFromPem(privateKey.ToCharArray());
-        byte[] dataBytes = Encoding.UTF8.GetBytes(data);
+        var dataBytes = Encoding.UTF8.GetBytes(data);
 
         // 使用私钥对数据进行签名
         return rsaPrivate.SignData(dataBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);

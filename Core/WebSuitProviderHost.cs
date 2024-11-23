@@ -14,18 +14,18 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace HitRefresh.WebSuit.Hosts;
+namespace HitRefresh.WebSuit;
 
 public class WebSuitProviderHost : IMobileSuitHost
 {
     private readonly ISuitExceptionHandler _exceptionHandler;
     private readonly AsyncServiceScope _rootScope;
     private readonly IReadOnlyList<ISuitMiddleware> _suitApp;
-    private IHostApplicationLifetime _lifetime;
-    private TaskCompletionSource _startUp;
-    private SuitRequestDelegate? _requestHandler;
     private Task? _hostTask;
-    private bool _shutDown = false;
+    private readonly IHostApplicationLifetime _lifetime;
+    private SuitRequestDelegate? _requestHandler;
+    private bool _shutDown;
+    private readonly TaskCompletionSource _startUp;
 
     public WebSuitProviderHost
     (
@@ -50,22 +50,6 @@ public class WebSuitProviderHost : IMobileSuitHost
 
     public void Dispose() { _rootScope.Dispose(); }
 
-    public void Initialize()
-    {
-        if (_requestHandler != null) return;
-        var requestStack = new Stack<SuitRequestDelegate>();
-        requestStack.Push(_ => Task.CompletedTask);
-
-
-        foreach (var middleware in _suitApp.Reverse())
-        {
-            var next = requestStack.Peek();
-            requestStack.Push(async c => await middleware.InvokeAsync(c, next));
-        }
-
-        _requestHandler = requestStack.Peek();
-    }
-
     public async Task StartAsync(CancellationToken cancellationToken = new())
     {
         if (_hostTask is not null) return;
@@ -82,6 +66,25 @@ public class WebSuitProviderHost : IMobileSuitHost
     {
         if (_hostTask is null) return;
         _hostTask = null;
+    }
+
+
+    public async ValueTask DisposeAsync() { await _rootScope.DisposeAsync(); }
+
+    public void Initialize()
+    {
+        if (_requestHandler != null) return;
+        var requestStack = new Stack<SuitRequestDelegate>();
+        requestStack.Push(_ => Task.CompletedTask);
+
+
+        foreach (var middleware in _suitApp.Reverse())
+        {
+            var next = requestStack.Peek();
+            requestStack.Push(async c => await middleware.InvokeAsync(c, next));
+        }
+
+        _requestHandler = requestStack.Peek();
     }
 
     private async void HandleRequest(string sessionId, int requestId, string request)
@@ -106,7 +109,7 @@ public class WebSuitProviderHost : IMobileSuitHost
         }
 
         if (context.Status == RequestStatus.OnExit
-         || context.Status == RequestStatus.NoRequest && context.CancellationToken.IsCancellationRequested)
+         || (context.Status == RequestStatus.NoRequest && context.CancellationToken.IsCancellationRequested))
             _shutDown = true;
     }
 
@@ -114,10 +117,7 @@ public class WebSuitProviderHost : IMobileSuitHost
     {
         if (_requestHandler is null) return;
 
-        for (; !_shutDown;)
-        {
-            await Task.Delay(1000);
-        }
+        for (; !_shutDown;) await Task.Delay(1000);
 
         var client = Services.GetRequiredService<WebSuitProviderClient>();
         client.OnRequestReceived -= HandleRequest;
@@ -125,7 +125,4 @@ public class WebSuitProviderHost : IMobileSuitHost
 
         _lifetime.StopApplication();
     }
-
-
-    public async ValueTask DisposeAsync() { await _rootScope.DisposeAsync(); }
 }
