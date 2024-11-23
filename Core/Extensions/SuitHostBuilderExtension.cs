@@ -52,6 +52,7 @@ public static class SuitHostBuilderExtension
         builder.Services.AddSingleton<WebSuitResponseCallBackService>();
         builder.Services.AddSingleton<WebSuitConsumerClient>();
         builder.Services.AddSingleton<IMobileSuitHost, WebSuitConsumerHost>();
+        builder.UseCommandServer<WebSuitConsumerCommandServer>();
 
         builder.WorkFlow.UsePrompt()
                .UseIOInput()
