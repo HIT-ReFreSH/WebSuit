@@ -5,7 +5,6 @@
 //  *
 //  */
 
-using HitRefresh.MobileSuit;
 using HitRefresh.WebSuit.Core;
 using HitRefresh.WebSuit.Messaging;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -21,8 +20,11 @@ public class WebSuitConsumerClient : WebSuitClient
     {
         HubConnection.On<int, WebSuitInterruptionType>
             ("ReceiveInterruption", (id, type) => OnInterruptionReceived?.Invoke(id, type));
-        HubConnection.On<PrintUnitTransfer>("ReceivePrint",
-                                    printUnits => OnPrintReceived?.Invoke(printUnits));
+        HubConnection.On<PrintUnitTransfer>
+        (
+            "ReceivePrint",
+            printUnits => OnPrintReceived?.Invoke(printUnits)
+        );
         HubConnection.On<int, SuitContextSummary>
             ("ReceiveResponse", (id, response) => OnResponseReceived?.Invoke(id, response));
     }

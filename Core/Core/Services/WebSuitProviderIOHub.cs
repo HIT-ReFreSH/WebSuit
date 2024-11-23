@@ -66,10 +66,7 @@ public class WebSuitProviderIOHub : IIOHub
     public void ResetInput() { throw new InvalidOperationException(); }
 
     /// <inheritdoc />
-    public string? ReadLine()
-    {
-        throw new InvalidOperationException();
-    }
+    public string? ReadLine() { throw new InvalidOperationException(); }
 
     /// <inheritdoc />
     public async Task<string?> ReadLineAsync()
@@ -81,10 +78,10 @@ public class WebSuitProviderIOHub : IIOHub
     public int Peek() { throw new InvalidOperationException(); }
 
     /// <inheritdoc />
-    public int Read() { throw new InvalidOperationException();}
+    public int Read() { throw new InvalidOperationException(); }
 
     /// <inheritdoc />
-    public string ReadToEnd() { throw new InvalidOperationException();}
+    public string ReadToEnd() { throw new InvalidOperationException(); }
 
     /// <inheritdoc />
     public async Task<string> ReadToEndAsync()
@@ -135,13 +132,13 @@ public class WebSuitProviderIOHub : IIOHub
     /// <inheritdoc />
     public virtual void Write(PrintUnit content)
     {
-        Client.SendPrintAsync(SessionId, PrintUnitTransfer.FromPrintUnit( content)).GetAwaiter().GetResult();
+        Client.SendPrintAsync(SessionId, PrintUnitTransfer.FromPrintUnit(content)).GetAwaiter().GetResult();
     }
 
     /// <inheritdoc />
     public virtual async Task WriteAsync(PrintUnit content)
     {
-        await Client.SendPrintAsync(SessionId, PrintUnitTransfer.FromPrintUnit( content));
+        await Client.SendPrintAsync(SessionId, PrintUnitTransfer.FromPrintUnit(content));
     }
 
 
@@ -160,7 +157,7 @@ public class WebSuitProviderIOHub : IIOHub
 
     private void HandleInput(string sessionId, int interruptionId, string input)
     {
-        Console.WriteLine($"{SessionId}=={sessionId}: {SessionId==sessionId}");
+        Console.WriteLine($"{SessionId}=={sessionId}: {SessionId == sessionId}");
         Console.WriteLine($"Input[{interruptionId}]={input}");
         if (SessionId == sessionId)
             InputQueue[interruptionId] = input;
@@ -184,14 +181,14 @@ public class WebSuitProviderIOHub : IIOHub
 
     private string WaitInputUntilGot(int id)
     {
-        var tsc=new TaskCompletionSource<string>();
-        _=Waiter(tsc);
+        var tsc = new TaskCompletionSource<string>();
+        _ = Waiter(tsc);
 
         return tsc.Task.Result;
 
         async Task Waiter(TaskCompletionSource<string> tsc)
         {
-            var res= await WaitInputUntilGotAsync(id);
+            var res = await WaitInputUntilGotAsync(id);
             tsc.SetResult(res);
         }
     }
@@ -199,10 +196,7 @@ public class WebSuitProviderIOHub : IIOHub
     private async Task<string> WaitInputUntilGotAsync(int id)
     {
         string? result;
-        while (!InputQueue.TryGetValue(id, out result))
-        {
-            await Task.Delay(100);
-        }
+        while (!InputQueue.TryGetValue(id, out result)) await Task.Delay(100);
 
 
         return result;

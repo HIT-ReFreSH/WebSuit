@@ -8,9 +8,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="BouncyCastle.NetCore" Version="2.2.1" />
-      <PackageReference Include="NSec.Cryptography" Version="24.4.0" />
-      <PackageReference Include="SSH.NET" Version="2024.2.0" />
+        <PackageReference Include="BouncyCastle.NetCore" Version="2.2.1"/>
+        <PackageReference Include="NSec.Cryptography" Version="24.4.0"/>
+        <PackageReference Include="SSH.NET" Version="2024.2.0"/>
     </ItemGroup>
 
 </Project>

@@ -5,7 +5,6 @@
 //  *
 //  */
 
-using HitRefresh.MobileSuit;
 using HitRefresh.WebSuit.Core;
 using HitRefresh.WebSuit.Messaging;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -22,10 +21,7 @@ public class WebSuitProviderClient : WebSuitClient
         HubConnection.On<string, int, string>
         (
             "ReceiveInput",
-            (sessionId, interruptionId, input)=>
-        {
-            OnInputReceived?.Invoke(sessionId, interruptionId, input);
-        }
+            (sessionId, interruptionId, input) => { OnInputReceived?.Invoke(sessionId, interruptionId, input); }
         );
         HubConnection.On<string, int, string>
         (

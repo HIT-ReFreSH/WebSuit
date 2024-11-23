@@ -12,12 +12,11 @@ using HitRefresh.WebSuit.Clients;
 using HitRefresh.WebSuit.Core.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 
 namespace HitRefresh.WebSuit;
 
 /// <summary>
-/// A Suit Host for WebSuit provider
+///     A Suit Host for WebSuit provider
 /// </summary>
 /// <param name="services"></param>
 /// <param name="startUp"></param>
@@ -35,7 +34,7 @@ public class WebSuitProviderHost
 ) : SuitHost(services, startUp, requestHandler, contextFactory)
 {
     private Task? _hostTask;
-    private bool _shutDown = false;
+    private bool _shutDown;
 
 
     public override async Task StartAsync(CancellationToken cancellationToken = new())

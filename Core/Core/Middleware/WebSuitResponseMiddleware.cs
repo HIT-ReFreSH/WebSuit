@@ -26,7 +26,7 @@ public class WebSuitResponseMiddleware : ISuitMiddleware
             await next(context);
         }
 
-        var id = int.Parse(context.Properties.TryGetValue("WebSuit::RequestId", out var value)?value: "-1");
+        var id = int.Parse(context.Properties.TryGetValue("WebSuit::RequestId", out var value) ? value : "-1");
         if (context.Status != RequestStatus.NotHandled
          || id == -1)
         {

@@ -26,10 +26,7 @@ public class WebSuitConsumerIODriver(IIOHub io, WebSuitConsumerClient client) : 
         client.OnInterruptionReceived += Interrupt;
     }
 
-    private void Print(PrintUnitTransfer context)
-    {
-        io.Write(context.ToPrintUnit());
-    }
+    private void Print(PrintUnitTransfer context) { io.Write(context.ToPrintUnit()); }
 
     private async void Interrupt(int id, WebSuitInterruptionType type)
     {

@@ -12,7 +12,6 @@ using HitRefresh.WebSuit.Clients;
 using HitRefresh.WebSuit.Core.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 
 namespace HitRefresh.WebSuit;
 
@@ -31,13 +30,11 @@ public class WebSuitConsumerHost
     WebSuitResponseCallBackService callBackService
 ) : SuitHost(services, startUp, requestHandler, contextFactory)
 {
-
-
     public override async Task StartAsync(CancellationToken cancellationToken = new())
     {
         await client.ConnectAsync();
-        using var scope = this.Services.CreateScope();
-        var io=scope.ServiceProvider.GetRequiredService<IIOHub>();
+        using var scope = Services.CreateScope();
+        var io = scope.ServiceProvider.GetRequiredService<IIOHub>();
         if (client.Connected)
         {
             await io.WriteLineAsync("Remote Connected.", OutputType.Ok);
@@ -46,11 +43,8 @@ public class WebSuitConsumerHost
         else
         {
             await io.WriteLineAsync("Remote Not Connected.", OutputType.Error);
-
         }
 
         await base.StartAsync(cancellationToken);
     }
-
-
 }

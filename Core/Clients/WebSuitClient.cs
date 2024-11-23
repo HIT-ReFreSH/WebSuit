@@ -27,10 +27,12 @@ public abstract class WebSuitClient
                        .WithUrl($"{host}/connect")
                        .Build();
     }
+
     /// <summary>
-    /// Connected
+    ///     Connected
     /// </summary>
     public bool Connected { get; set; }
+
     protected HubConnection HubConnection { get; }
     protected ILogger<WebSuitClient> Logger { get; }
     protected string RoomName { get; }
@@ -48,7 +50,7 @@ public abstract class WebSuitClient
         try
         {
             await HubConnection.StartAsync();
-            await HubConnection.InvokeAsync("Authenticate",Type, RoomName, utcTime, signature);
+            await HubConnection.InvokeAsync("Authenticate", Type, RoomName, utcTime, signature);
             Logger.LogInformation("Connected as Provider to room: {RoomName}", RoomName);
             Connected = true;
         }
