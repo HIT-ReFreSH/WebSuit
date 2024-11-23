@@ -7,6 +7,7 @@
 
 using HitRefresh.MobileSuit;
 using HitRefresh.MobileSuit.Core;
+using HitRefresh.MobileSuit.Core.Services;
 
 namespace HitRefresh.WebSuit.Messaging;
 
@@ -18,13 +19,14 @@ namespace HitRefresh.WebSuit.Messaging;
 /// <param name="Status"></param>
 /// <param name="ExceptionMessage"></param>
 /// <param name="Properties"></param>
+[Serializable]
 public record SuitContextSummary
 (
     string[] Request,
     string? Response,
     RequestStatus Status,
     string? ExceptionMessage,
-    Dictionary<string, string> Properties
+    Dictionary<string,string> Properties
 )
 {
     public static SuitContextSummary FromSuitContext(SuitContext context)
@@ -35,7 +37,7 @@ public record SuitContextSummary
             context.Response,
             context.Status,
             context.Exception?.Message,
-            context.Properties
+            context.Properties.ToDictionary(kv=>kv.Key,kv=>kv.Value)
         );
     }
 

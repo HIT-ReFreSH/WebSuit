@@ -6,6 +6,7 @@
 //  */
 
 using System.Collections.Concurrent;
+using HitRefresh.MobileSuit;
 using HitRefresh.WebSuit.Clients;
 using HitRefresh.WebSuit.Messaging;
 using Microsoft.Extensions.Configuration;
@@ -25,15 +26,24 @@ public class WebSuitResponseCallBackService(WebSuitConsumerClient client, IConfi
 
     private readonly int _timeOut = config.GetSection("WebSuit:Timeout").Exists()
                                         ? config.GetSection("WebSuit:Timeout").Get<int>()
-                                        : 5000;
+                                        : 200000;
 
     private readonly ConcurrentDictionary<int, SuitContextSummary> _responses = new();
 
     /// <inheritdoc />
-    public void Dispose() { client.OnResponseReceived -= HandleResponse; }
+    public void Dispose()
+    {
+        client.OnResponseReceived -= HandleResponse;
+        client.OnPrintReceived -= GotResponse;
+    }
 
-    public void Enable() { client.OnResponseReceived += HandleResponse; }
-
+    public void Enable()
+    {
+        client.OnResponseReceived += HandleResponse;
+        client.OnPrintReceived += GotResponse;
+    }
+    private readonly ConcurrentQueue<PrintUnit> _printUnits = new();
+    private void GotResponse(PrintUnitTransfer pu) => _printUnits.Enqueue(pu.ToPrintUnit());
     public async Task<SuitContextSummary> WaitFor(int id)
     {
         var sumWait = 0;
@@ -43,6 +53,11 @@ public class WebSuitResponseCallBackService(WebSuitConsumerClient client, IConfi
             {
                 _responses.TryRemove(id, out _);
                 return res;
+            }
+
+            if (_printUnits.TryDequeue(out var _))
+            {
+                sumWait = 0;
             }
 
             if (sumWait >= _timeOut)

@@ -26,11 +26,12 @@ public static class SuitHostBuilderExtension
     /// <returns></returns>
     public static SuitHostBuilder AsWebSuitProvider(this SuitHostBuilder builder)
     {
-        builder.Services.AddScoped<IIOHub, WebSuitProviderIOHub>();
+        builder.UseIO<WebSuitProviderIOHub>();
         builder.Services.AddSingleton<ISuitExceptionHandler, WebSuitExceptionHandler>();
         builder.Services.AddScoped<WebSuitContextService>();
         builder.Services.AddSingleton<WebSuitProviderClient>();
         builder.Services.AddLogging(loggingBuilder => { loggingBuilder.AddConsole(); });
+        builder.Services.AddSingleton<IMobileSuitHost, WebSuitProviderHost>();
         builder.WorkFlow
                .UseRequestParsing()
                .UseHostShell()
@@ -111,7 +112,7 @@ public static class SuitHostBuilderExtension
     /// <returns></returns>
     public static SuitHostBuilder MapRemoteClient<T>(this SuitHostBuilder builder)
     {
-        builder.AddClient(SuitObjectShell.FromType(typeof(T)));
+        builder.AddRemoteClient(SuitObjectShell.FromType(typeof(T)));
         return builder;
     }
 
@@ -124,7 +125,7 @@ public static class SuitHostBuilderExtension
     /// <returns></returns>
     public static SuitHostBuilder MapRemoteClient<T>(this SuitHostBuilder builder, string name)
     {
-        builder.AddClient(SuitObjectShell.FromType(typeof(T), name));
+        builder.AddRemoteClient(SuitObjectShell.FromType(typeof(T), name));
         return builder;
     }
 

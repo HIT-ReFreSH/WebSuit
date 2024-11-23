@@ -7,12 +7,13 @@
 
 using System.Collections.Concurrent;
 using HitRefresh.MobileSuit;
+using HitRefresh.WebSuit.Core;
 using HitRefresh.WebSuit.Services;
 using Microsoft.AspNetCore.SignalR;
 
 namespace HitRefresh.WebSuit.Messaging;
 
-public class WebSuitHub(KeyChainService keyChain) : Hub
+public class WebSuitHub(KeyChainService keyChain, ILogger<WebSuitHub> logger) : Hub
 {
     private static readonly ConcurrentDictionary<string, RoomInfo> Rooms = new();
     private static readonly ConcurrentDictionary<string, string> ConsumerToProviderMap = new();
@@ -106,6 +107,7 @@ public class WebSuitHub(KeyChainService keyChain) : Hub
         }
 
         await Clients.Client(providerId).SendAsync("ReceiveInput", Context.ConnectionId, interruptionId, input);
+        // logger.LogInformation("SendInput({0}->{1}): #{id} {2}", roomName, Context.ConnectionId, interruptionId, input);
     }
 
     public async Task SendRequest(string roomName, int requestId, string request)
@@ -138,9 +140,10 @@ public class WebSuitHub(KeyChainService keyChain) : Hub
         }
 
         await Clients.Client(consumerId).SendAsync("ReceiveInterruption", interruptionId, interruptionMessage);
+        // logger.LogInformation("SendInterruption({0}->{1}): #{id} {2}", roomName, Context.ConnectionId, interruptionId, Enum.GetName(interruptionMessage));
     }
 
-    public async Task SendPrint(string roomName, string consumerId, PrintUnit[] printUnits)
+    public async Task SendPrint(string roomName, string consumerId, PrintUnitTransfer printUnits)
     {
         if (!Rooms.TryGetValue(roomName, out var room) || !room.Providers.Contains(Context.ConnectionId))
         {
@@ -153,6 +156,7 @@ public class WebSuitHub(KeyChainService keyChain) : Hub
         }
 
         await Clients.Client(consumerId).SendAsync("ReceivePrint", printUnits);
+        // logger.LogInformation($"{nameof(SendPrint)}({{0}}->{{1}}): {{2}}", roomName, consumerId, printUnits.Text);
     }
 
     public async Task SendResponse(string roomName, string consumerId, int requestId, SuitContextSummary response)
@@ -167,13 +171,11 @@ public class WebSuitHub(KeyChainService keyChain) : Hub
             throw new HubException("The specified Consumer is not in this room.");
         }
 
-        await Clients.Client(consumerId).SendAsync("ReceiveResponse", requestId,response);
+        await Clients.Client(consumerId).SendAsync("ReceiveResponse", requestId, response);
     }
 
     private static bool IsTimestampValid(DateTime utcTime)
     {
-
-
         var now = DateTime.UtcNow;
         return utcTime > now.AddMinutes(-5) && utcTime < now.AddMinutes(5);
     }

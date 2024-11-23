@@ -16,113 +16,64 @@ using Microsoft.Extensions.Logging;
 
 namespace HitRefresh.WebSuit;
 
-public class WebSuitProviderHost : IMobileSuitHost
+/// <summary>
+/// A Suit Host for WebSuit provider
+/// </summary>
+/// <param name="services"></param>
+/// <param name="startUp"></param>
+/// <param name="requestHandler"></param>
+/// <param name="contextFactory"></param>
+/// <param name="lifetime"></param>
+public class WebSuitProviderHost
+(
+    IServiceProvider services,
+    SuitHostStartCompletionSource startUp,
+    SuitRequestDelegate requestHandler,
+    ISuitContextFactory contextFactory,
+    IHostApplicationLifetime lifetime,
+    WebSuitProviderClient client
+) : SuitHost(services, startUp, requestHandler, contextFactory)
 {
-    private readonly ISuitExceptionHandler _exceptionHandler;
-    private readonly AsyncServiceScope _rootScope;
-    private readonly IReadOnlyList<ISuitMiddleware> _suitApp;
     private Task? _hostTask;
-    private readonly IHostApplicationLifetime _lifetime;
-    private SuitRequestDelegate? _requestHandler;
-    private bool _shutDown;
-    private readonly TaskCompletionSource _startUp;
+    private bool _shutDown = false;
 
-    public WebSuitProviderHost
-    (
-        IServiceProvider services,
-        IReadOnlyList<ISuitMiddleware> middleware,
-        TaskCompletionSource startUp
-    )
-    {
-        Services = services;
-        _suitApp = middleware;
-        _startUp = startUp;
-        _lifetime = Services.GetRequiredService<IHostApplicationLifetime>();
-        _exceptionHandler = Services.GetRequiredService<ISuitExceptionHandler>();
-        _rootScope = Services.CreateAsyncScope();
-        Logger = Services.GetRequiredService<ILogger<WebSuitProviderHost>>();
-    }
 
-    /// <inheritdoc />
-    public ILogger Logger { get; }
-
-    public IServiceProvider Services { get; }
-
-    public void Dispose() { _rootScope.Dispose(); }
-
-    public async Task StartAsync(CancellationToken cancellationToken = new())
+    public override async Task StartAsync(CancellationToken cancellationToken = new())
     {
         if (_hostTask is not null) return;
-        Initialize();
-
-        _startUp.SetResult();
-        var client = Services.GetRequiredService<WebSuitProviderClient>();
         client.OnRequestReceived += HandleRequest;
         await client.ConnectAsync();
         _hostTask = WaitForExit();
+        StartUp.SetResult();
     }
 
-    public async Task StopAsync(CancellationToken cancellationToken = new())
+    public override Task StopAsync(CancellationToken cancellationToken = new())
     {
-        if (_hostTask is null) return;
+        if (_hostTask is null) return Task.CompletedTask;
         _hostTask = null;
-    }
-
-
-    public async ValueTask DisposeAsync() { await _rootScope.DisposeAsync(); }
-
-    public void Initialize()
-    {
-        if (_requestHandler != null) return;
-        var requestStack = new Stack<SuitRequestDelegate>();
-        requestStack.Push(_ => Task.CompletedTask);
-
-
-        foreach (var middleware in _suitApp.Reverse())
-        {
-            var next = requestStack.Peek();
-            requestStack.Push(async c => await middleware.InvokeAsync(c, next));
-        }
-
-        _requestHandler = requestStack.Peek();
+        return Task.CompletedTask;
     }
 
     private async void HandleRequest(string sessionId, int requestId, string request)
     {
-        if (_requestHandler is null) return;
-        var requestScope = Services.CreateScope();
-        var context = new SuitContext(requestScope);
+        var context = ContextFactory.CreateContext();
         context.Request = [request];
         var webSuitContext = context.ServiceProvider.GetRequiredService<WebSuitContextService>();
         webSuitContext.SessionId = sessionId;
         webSuitContext.RequestId = requestId;
         webSuitContext.Role = "Provider";
-        try
-        {
-            await _requestHandler(context);
-        }
-        catch (Exception ex)
-        {
-            context.Exception = ex;
-            context.Status = RequestStatus.Faulted;
-            await _exceptionHandler.InvokeAsync(context);
-        }
+        await RequestHandler(context);
 
         if (context.Status == RequestStatus.OnExit
-         || (context.Status == RequestStatus.NoRequest && context.CancellationToken.IsCancellationRequested))
+         || context is { Status: RequestStatus.NoRequest, CancellationToken.IsCancellationRequested: true })
             _shutDown = true;
     }
 
     private async Task WaitForExit()
     {
-        if (_requestHandler is null) return;
-
         for (; !_shutDown;) await Task.Delay(1000);
-
-        var client = Services.GetRequiredService<WebSuitProviderClient>();
         client.OnRequestReceived -= HandleRequest;
         await client.DisconnectAsync();
-
-        _lifetime.StopApplication();
+        lifetime.StopApplication();
     }
 }

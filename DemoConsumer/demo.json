@@ -1,0 +1,7 @@
+{
+  "WebSuit": {
+    "Host": "http://localhost:5000",
+    "App": "demo",
+    "PrivateKey": "../Keys/private_key.pem"
+  }
+}

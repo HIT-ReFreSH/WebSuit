@@ -6,6 +6,7 @@
 //  */
 
 using HitRefresh.MobileSuit;
+using HitRefresh.WebSuit.Core;
 using HitRefresh.WebSuit.Messaging;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.Configuration;
@@ -21,7 +22,10 @@ public class WebSuitProviderClient : WebSuitClient
         HubConnection.On<string, int, string>
         (
             "ReceiveInput",
-            (sessionId, interruptionId, input) => OnInputReceived?.Invoke(sessionId, interruptionId, input)
+            (sessionId, interruptionId, input)=>
+        {
+            OnInputReceived?.Invoke(sessionId, interruptionId, input);
+        }
         );
         HubConnection.On<string, int, string>
         (
@@ -51,7 +55,7 @@ public class WebSuitProviderClient : WebSuitClient
         }
     }
 
-    public async Task SendPrintAsync(string sessionId, PrintUnit printUnit)
+    public async Task SendPrintAsync(string sessionId, PrintUnitTransfer printUnit)
     {
         try
         {
