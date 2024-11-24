@@ -1,5 +1,7 @@
 ﻿# HitRefresh.WebSuit
 
+This project aims to enable MobileSuit as a Service over Web.
+
 ## Generate Key-Pairs
 
 ```bash
